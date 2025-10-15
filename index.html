@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft AI Developer Assistant</title>
+    <style>
+        /* CSS for a simple, clean interface */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #chat-window {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            white-space: pre-wrap; /* Code format maintain karne ke liye */
+        }
+        .user-message {
+            text-align: right;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+        .ai-message {
+            text-align: left;
+            margin-bottom: 10px;
+            color: #28a745;
+            border-left: 3px solid #28a745;
+            padding-left: 10px;
+        }
+        #prompt-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        #send-button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #send-button:disabled {
+            background-color: #99cfff;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minecraft Developer AI Assistant</h1>
+
+        <div id="chat-window">
+            <div class="ai-message">Hello! Main aapka Minecraft Developer Assistant hoon. Mujhe koi plugin idea, code change, ya configuration modification bataiye.</div>
+        </div>
+
+        <textarea id="prompt-input" rows="4" placeholder="Apna sawal ya code modification request yahan likhein..."></textarea>
+        <button id="send-button">Send Request</button>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const promptInput = document.getElementById('prompt-input');
+        const sendButton = document.getElementById('send-button');
+
+        // Function: Chat Window mein message add karna
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = sender === 'user' ? 'user-message' : 'ai-message';
+            
+            // Text ko safe tareeqe se daalna
+            messageDiv.textContent = text; 
+            
+            chatWindow.appendChild(messageDiv);
+            
+            // Chat ko sabse neeche scroll karna
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Function: AI API ko call karna
+        async function sendPrompt() {
+            const prompt = promptInput.value.trim();
+            if (!prompt) return;
+
+            // 1. User ka message dikhana
+            addMessage(prompt, 'user');
+            
+            // 2. Input field aur button disable karna
+            promptInput.value = '';
+            sendButton.disabled = true;
+            sendButton.textContent = 'AI Soch Raha Hai...';
+
+            try {
+                // 3. Vercel par deployed API ko call karna
+                // '/api/chat' yahi woh link hai jo Vercel ne banaya hai!
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: prompt }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 4. AI ka jawab dikhana
+                    addMessage(data.answer, 'ai');
+                } else {
+                    // Error message dikhana
+                    addMessage(`Error: ${data.error || 'Server se jawab nahi mila.'}`, 'ai');
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                addMessage(`Critical Error: Network connection ya API mein masla hai.`, 'ai');
+            } finally {
+                // 5. Button ko wapas enable karna
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send Request';
+            }
+        }
+
+        // Event Listeners: Button click aur Enter key press par function call karna
+        sendButton.addEventListener('click', sendPrompt);
+        promptInput.addEventListener('keypress', (e) => {
+            // Shift + Enter se new line aur sirf Enter se send
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendPrompt();
+            }
+        });
+
+    </script>
+</body>
+</html>
